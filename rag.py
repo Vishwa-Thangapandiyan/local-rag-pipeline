@@ -51,4 +51,25 @@ def embed_chunks(chunks):
 test_embeddings = embed_chunks(chunks[:3])
 print(f"\nNumber of embeddings: {len(test_embeddings)}")
 print(f"Embedding size: {len(test_embeddings[0])}")
+
+#--------------------------------------------------------------------
+
+#setting up and initializing chromadb to store the embeddings
+import chromadb
+import uuid
+
+chroma_client = chromadb.PersistentClient(path="chroma_db")
+collection = chroma_client.get_or_create_collection(name="research_papers")
+
+#now, we add data chunks and embeddings onto chroma db
+for doc in documents:
+    chunks = chunk_text(doc["text"])
+    embeddings = embed_chunks(chunks)
+    collection.add(
+        documents = chunks,
+        embeddings = embeddings,
+        metadatas = [{"source":  doc["filename"]} for _ in chunks],
+        ids = [str(uuid.uuid4()) for _ in chunks]
+    )
     
+    print(f"Added {len(chunks)} chunks from {doc['filename']}")
