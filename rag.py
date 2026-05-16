@@ -73,3 +73,30 @@ for doc in documents:
     )
     
     print(f"Added {len(chunks)} chunks from {doc['filename']}")
+
+#--------------------------------------------------------------------
+
+# Query
+# firstly, we're loading the query input from the user and converting it into embeddings using chromadb
+question = input("Ask a query: ")
+
+question_embeddings = embed_chunks([question])[0]
+results = collection.query(
+    query_embeddings = [question_embeddings],
+    n_results = 3
+)
+
+context = "\n\n".join(results["documents"][0])
+
+system_instruction = "Answer the user's question using only the provided context."
+user_prompt = f"Context: {context}\n Question: {question}"
+
+response = ollama.chat(
+    model = "llama3.1:8b",
+    messages = [
+        {"role":"system", "content":system_instruction},
+        {"role":"user", "content":user_prompt}
+    ],
+)
+
+print(response["message"]["content"])
