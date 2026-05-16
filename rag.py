@@ -22,7 +22,7 @@ print(f"\nTotal documents loaded: {len(documents)}")
 #--------------------------------------------------------------------
 
 #text chunking
-def chunk_text(text, chunk_size=500, overlap=50):
+def chunk_text(text, chunk_size=1000, overlap=200):
     chunks = []
     start = 0 #first text character
     while start < len(text):
@@ -48,10 +48,6 @@ def embed_chunks(chunks):
     
     return response['embeddings']
 
-test_embeddings = embed_chunks(chunks[:3])
-print(f"\nNumber of embeddings: {len(test_embeddings)}")
-print(f"Embedding size: {len(test_embeddings[0])}")
-
 #--------------------------------------------------------------------
 
 #setting up and initializing chromadb to store the embeddings
@@ -62,17 +58,20 @@ chroma_client = chromadb.PersistentClient(path="chroma_db")
 collection = chroma_client.get_or_create_collection(name="research_papers")
 
 #now, we add data chunks and embeddings onto chroma db
-for doc in documents:
-    chunks = chunk_text(doc["text"])
-    embeddings = embed_chunks(chunks)
-    collection.add(
-        documents = chunks,
-        embeddings = embeddings,
-        metadatas = [{"source":  doc["filename"]} for _ in chunks],
-        ids = [str(uuid.uuid4()) for _ in chunks]
-    )
-    
-    print(f"Added {len(chunks)} chunks from {doc['filename']}")
+if collection.count() == 0:
+    for doc in documents:
+        chunks = chunk_text(doc["text"])
+        embeddings = embed_chunks(chunks)
+        collection.add(
+            documents = chunks,
+            embeddings = embeddings,
+            metadatas = [{"source":  doc["filename"]} for _ in chunks],
+            ids = [str(uuid.uuid4()) for _ in chunks]
+        )
+        
+        print(f"Added {len(chunks)} chunks from {doc['filename']}")
+else:
+    print(f"Collection already has {collection.count()} chunks, skipping ingestion")
 
 #--------------------------------------------------------------------
 
@@ -83,14 +82,21 @@ question = input("Ask a query: ")
 question_embeddings = embed_chunks([question])[0]
 results = collection.query(
     query_embeddings = [question_embeddings],
-    n_results = 3
+    n_results = 5,
 )
 
 context = "\n\n".join(results["documents"][0])
 
-system_instruction = "Answer the user's question using only the provided context."
+system_instruction = """You are a helpful research assistant. 
+Answer the user's question using ONLY the provided context.
+Explain clearly and thoroughly, as if teaching a beginner.
+Use examples where possible. Be detailed and comprehensive.
+Stay strictly focused on what the user asked — do not mix information from unrelated topics.
+If the context doesn't contain enough information to answer, say so clearly."""
 user_prompt = f"Context: {context}\n Question: {question}"
 
+sources = [m["source"] for m in results["metadatas"][0]]
+print(f"Sources used: {sources}")
 response = ollama.chat(
     model = "llama3.1:8b",
     messages = [
@@ -100,3 +106,5 @@ response = ollama.chat(
 )
 
 print(response["message"]["content"])
+print("\n\n\n\n------------------\n\n")
+print(response)
