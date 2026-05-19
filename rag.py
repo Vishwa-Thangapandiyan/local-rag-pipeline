@@ -22,7 +22,7 @@ print(f"\nTotal documents loaded: {len(documents)}")
 #--------------------------------------------------------------------
 
 #text chunking
-def chunk_text(text, chunk_size=1000, overlap=200):
+def chunk_text(text, chunk_size=500, overlap=50):
     chunks = []
     start = 0 #first text character
     while start < len(text):
@@ -91,8 +91,8 @@ system_instruction = """You are a helpful research assistant.
 Answer the user's question using ONLY the provided context.
 Explain clearly and thoroughly, as if teaching a beginner.
 Use examples where possible. Be detailed and comprehensive.
-Stay strictly focused on what the user asked — do not mix information from unrelated topics.
-If the context doesn't contain enough information to answer, say so clearly."""
+Stay strictly focused on what the user asked.
+If the context doesn't contain enough information to answer,do not hallucinate, and say so clearly."""
 user_prompt = f"Context: {context}\n Question: {question}"
 
 sources = [m["source"] for m in results["metadatas"][0]]
@@ -107,4 +107,3 @@ response = ollama.chat(
 
 print(response["message"]["content"])
 print("\n\n\n\n------------------\n\n")
-print(response)
