@@ -1,4 +1,4 @@
-# Local RAG Pipeline — A Beginner's Exploration
+# Local RAG Pipeline
 
 This project is a beginner-friendly exploration of **Retrieval-Augmented Generation (RAG)** — a technique that lets you chat with your own documents using a local LLM. Everything runs locally: no OpenAI, no cloud APIs, just your machine.
 
@@ -28,6 +28,24 @@ The idea is straightforward:
 
 ---
 
+## Project Files
+
+```
+rag-project/
+├── rag.py            # Main pipeline: ingest → query → eval
+├── eval.py           # Standalone eval runner (imports from rag.py)
+├── eval_set.json     # 20 ground-truth Q&A pairs for retrieval evaluation
+├── rag_impl.ipynb    # Notebook version (exploratory)
+└── docs/
+    ├── attention_is_all_you_need.pdf
+    ├── bert.pdf
+    ├── gpt3.pdf
+    ├── rag.pdf
+    └── wordtovec.pdf
+```
+
+---
+
 ## Pipeline Walkthrough
 
 ### Stage 1 — Load PDFs
@@ -37,6 +55,7 @@ def load_pdfs(folder_path):
     documents = []
     for filename in os.listdir(folder_path):
         if filename.endswith(".pdf"):
+            filepath = os.path.join(folder_path, filename)
             reader = PdfReader(filepath)
             text = ""
             for page in reader.pages:
@@ -54,7 +73,7 @@ All PDFs from the `docs/` folder are read page by page, and their full text is c
 LLMs have a limited context window, and embedding a 50-page PDF as one block is impractical. So the text is split into overlapping chunks:
 
 ```python
-def chunk_text(text, chunk_size=1000, overlap=200):
+def chunk_text(text, chunk_size=500, overlap=50):
     chunks = []
     start = 0
     while start < len(text):
@@ -64,15 +83,15 @@ def chunk_text(text, chunk_size=1000, overlap=200):
     return chunks
 ```
 
-- **`chunk_size=1000`** — each chunk is ~1000 characters
-- **`overlap=200`** — consecutive chunks share 200 characters
+- **`chunk_size=500`** — each chunk is ~500 characters
+- **`overlap=50`** — consecutive chunks share 50 characters
 
 The overlap is important. Without it, a sentence split across a chunk boundary would lose meaning. The overlap ensures context isn't lost at the edges.
 
 ```
-Chunk 1: [0     →     1000]
-Chunk 2:       [800   →   1800]
-Chunk 3:             [1600 → 2600]
+Chunk 1: [0     →   500]
+Chunk 2:      [450 →   950]
+Chunk 3:           [900 → 1400]
 ```
 
 ---
@@ -132,9 +151,11 @@ results = collection.query(
 )
 
 context = "\n\n".join(results["documents"][0])
+sources = [m["source"] for m in results["metadatas"][0]]
+print(f"Sources used: {sources}")
 ```
 
-The key insight: the question and the relevant chunks end up *close together in vector space*, even if they don't share exact keywords. This is what makes semantic search powerful compared to plain keyword search.
+The key insight: the question and the relevant chunks end up *close together in vector space*, even if they don't share exact keywords. This is what makes semantic search powerful compared to plain keyword search. The sources list shows which PDFs were retrieved so you can verify the pipeline is pulling from the right documents.
 
 ---
 
@@ -146,8 +167,9 @@ The retrieved chunks are assembled into a context string and passed to `llama3.1
 system_instruction = """You are a helpful research assistant. 
 Answer the user's question using ONLY the provided context.
 Explain clearly and thoroughly, as if teaching a beginner.
-Stay strictly focused on what the user asked — do not mix information from unrelated topics.
-If the context doesn't contain enough information to answer, say so clearly."""
+Use examples where possible. Be detailed and comprehensive.
+Stay strictly focused on what the user asked.
+If the context doesn't contain enough information to answer, do not hallucinate, and say so clearly."""
 
 response = ollama.chat(
     model="llama3.1:8b",
@@ -164,6 +186,43 @@ The system prompt is important — it tells the model to stay grounded in the re
 
 ---
 
+### Stage 7 — Retrieval Evaluation
+
+After answering the query, `rag.py` automatically runs a retrieval accuracy evaluation against `eval_set.json` — a set of 20 ground-truth questions across the 5 research papers.
+
+```python
+for item in eval_set:
+    question = item["question"]
+    expected_source = item["source"]
+
+    question_embedding = embed_chunks([question])[0]
+    results = collection.query(
+        query_embeddings=[question_embedding],
+        n_results=5
+    )
+
+    sources = [m["source"] for m in results["metadatas"][0]]
+    source_correct = expected_source in sources
+    if source_correct:
+        correct += 1
+
+    print(f"Q: {question}")
+    print(f"Expected: {expected_source} | Got: {sources[0]} | {'✓' if source_correct else '✗'}")
+```
+
+The eval checks whether the correct source document appears in the top-5 retrieved chunks. This measures retrieval quality independently of LLM answer quality.
+
+**Current retrieval accuracy: 17/20 = 85.0%**
+
+The eval set covers questions about:
+- Transformer architecture (`attention_is_all_you_need.pdf`)
+- BERT pre-training (`bert.pdf`)
+- GPT-3 few-shot learning (`gpt3.pdf`)
+- RAG variants and components (`rag.pdf`)
+- Word2Vec CBOW and skip-gram (`wordtovec.pdf`)
+
+---
+
 ## How to Run
 
 **Prerequisites:** [Ollama](https://ollama.com) installed and running, with these models pulled:
@@ -177,12 +236,12 @@ ollama pull llama3.1:8b
 pip install pypdf ollama chromadb
 ```
 
-**Add your PDFs** to the `docs/` folder, then run:
+**Run the pipeline:**
 ```bash
 python rag.py
 ```
 
-Type your question when prompted and the pipeline will retrieve relevant context from your documents and generate an answer.
+Type your question when prompted. The pipeline will retrieve relevant context from the docs, generate an answer, print the source documents used, and then automatically run the 20-question retrieval eval.
 
 ---
 
@@ -194,6 +253,6 @@ This project was built to understand the fundamentals of a RAG pipeline from scr
 - Why chunking with overlap matters for preserving context at boundaries
 - How vector similarity search retrieves relevant content semantically
 - How to ground an LLM's responses to a specific set of documents using a system prompt
-- How to wire all these pieces together into a working end-to-end pipeline
+- How to evaluate retrieval quality with a ground-truth eval set
 
 It's intentionally minimal — no LangChain, no LlamaIndex — which makes it easier to see exactly what's happening at each stage. Great starting point before moving to more complex RAG architectures.
