@@ -107,3 +107,44 @@ response = ollama.chat(
 
 print(response["message"]["content"])
 print("\n\n\n\n------------------\n\n")
+
+#--------------------------------------------------------------------
+# Eval set
+import json
+import sys
+
+def run_eval():
+    with open("eval_set.json","r") as f:
+        eval_set = json.load(f)
+    print(f"Loaded {len(eval_set)} eval questions")
+
+    correct = 0
+
+    for item in eval_set:
+        question = item["question"]
+        expected_source = item["source"]
+
+        question_embedding = embed_chunks([question])[0]
+        results = collection.query(
+            query_embeddings = [question_embedding],
+            n_results = 5
+        )
+
+        sources = [m["source"] for m in results["metadatas"][0]]
+        source_correct = expected_source in sources
+        if source_correct:
+            correct+=1
+
+        print(f"Q: {question}")
+        print(f"Expected: {expected_source} | Got: {sources[0]} | {'✓' if source_correct else '✗'}")
+        print("---")
+    return correct, eval_set
+
+correct, eval_set = run_eval()  
+print(f"\nRetrieval accuracy: {correct}/{len(eval_set)} = {correct/len(eval_set)*100:.1f}%")
+
+
+
+
+
+#--------------------------------------------------------------------

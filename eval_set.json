@@ -1,0 +1,102 @@
+[
+  {
+    "question": "What optimizer was used to train the Transformer?",
+    "gold_answer": "Adam optimizer with β1=0.9, β2=0.98, ε=10^-9 and warmup_steps=4000",
+    "source": "attention_is_all_you_need.pdf"
+  },
+  {
+    "question": "How many attention heads does the base Transformer use?",
+    "gold_answer": "8 attention heads",
+    "source": "attention_is_all_you_need.pdf"
+  },
+  {
+    "question": "What is the model dimension dmodel in the base Transformer?",
+    "gold_answer": "512",
+    "source": "attention_is_all_you_need.pdf"
+  },
+  {
+    "question": "What dataset was used for English to German translation in the Transformer paper?",
+    "gold_answer": "WMT 2014 English-German dataset consisting of about 4.5 million sentence pairs",
+    "source": "attention_is_all_you_need.pdf"
+  },
+  {
+    "question": "What does BERT stand for?",
+    "gold_answer": "Bidirectional Encoder Representations from Transformers",
+    "source": "bert.pdf"
+  },
+  {
+    "question": "What are the two tasks BERT was pre-trained on?",
+    "gold_answer": "Masked Language Model (MLM) and Next Sentence Prediction (NSP)",
+    "source": "bert.pdf"
+  },
+  {
+    "question": "How many parameters does BERT-Large have?",
+    "gold_answer": "340 million parameters",
+    "source": "bert.pdf"
+  },
+  {
+    "question": "What is the masked language model objective in BERT?",
+    "gold_answer": "15% of input tokens are randomly masked and the model is trained to predict the original masked tokens based on context",
+    "source": "bert.pdf"
+  },
+  {
+    "question": "How many parameters does GPT-3 have?",
+    "gold_answer": "175 billion parameters",
+    "source": "gpt3.pdf"
+  },
+  {
+    "question": "What is few-shot learning as described in GPT-3?",
+    "gold_answer": "Providing the model with a few examples of the task in the prompt at inference time without any gradient updates or fine-tuning",
+    "source": "gpt3.pdf"
+  },
+  {
+    "question": "What dataset was GPT-3 trained on?",
+    "gold_answer": "A filtered version of Common Crawl, WebText2, Books1, Books2, and Wikipedia",
+    "source": "gpt3.pdf"
+  },
+  {
+    "question": "What is in-context learning in GPT-3?",
+    "gold_answer": "The ability of the model to use the context provided in the prompt to perform tasks without any weight updates, using only forward passes at test time",
+    "source": "gpt3.pdf"
+  },
+  {
+    "question": "What does RAG stand for?",
+    "gold_answer": "Retrieval-Augmented Generation",
+    "source": "rag.pdf"
+  },
+  {
+    "question": "What retrieval model does RAG use?",
+    "gold_answer": "Dense Passage Retriever (DPR), a bi-encoder based on BERT that retrieves documents using Maximum Inner Product Search (MIPS)",
+    "source": "rag.pdf"
+  },
+  {
+    "question": "What are the two RAG variants described in the paper?",
+    "gold_answer": "RAG-Sequence which uses the same retrieved document for the full sequence generation, and RAG-Token which can use different documents for each token generation",
+    "source": "rag.pdf"
+  },
+  {
+    "question": "What generator model does RAG use?",
+    "gold_answer": "BART-large, a pre-trained seq2seq transformer",
+    "source": "rag.pdf"
+  },
+  {
+    "question": "What are the two model architectures proposed in Word2Vec?",
+    "gold_answer": "Continuous Bag of Words (CBOW) and Skip-gram",
+    "source": "wordtovec.pdf"
+  },
+  {
+    "question": "What is the skip-gram model in Word2Vec?",
+    "gold_answer": "A model that predicts surrounding context words given a center word, learning word representations by maximizing the probability of context words",
+    "source": "wordtovec.pdf"
+  },
+  {
+    "question": "What is negative sampling in Word2Vec?",
+    "gold_answer": "An approximation technique where instead of updating all weights, only a small number of negative examples are sampled and updated along with the positive example, making training more efficient",
+    "source": "wordtovec.pdf"
+  },
+  {
+    "question": "What is the famous analogy example used in the Word2Vec paper?",
+    "gold_answer": "King - Man + Woman = Queen, demonstrating that word vector arithmetic captures semantic relationships",
+    "source": "wordtovec.pdf"
+  }
+]
